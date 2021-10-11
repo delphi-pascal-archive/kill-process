@@ -1,0 +1,33 @@
+procedure NTProcessKill(pnm: String);
+var
+  PIDArray: array [0..1023] of DWORD;
+  cb: DWORD;
+  I: Integer;
+  ProcCount: Integer;
+  hMod: HMODULE;
+  hProcess: THandle;
+  ModuleName: array [0..300] of Char;
+  Process_Killed: Boolean;
+begin
+  try
+  process_killed := false;
+  repeat
+    EnumProcesses(@PIDArray, SizeOf(PIDArray), cb);
+    ProcCount := cb div SizeOf(DWORD);
+    for I := 0 to ProcCount - 1 do
+    begin
+      hProcess := OpenProcess(PROCESS_ALL_ACCESS, False, PIDArray[I]);
+      if (hProcess <> 0) then
+      begin
+        EnumProcessModules(hProcess, @hMod, SizeOf(hMod), cb);
+        GetModuleFilenameEx(hProcess, hMod, ModuleName, SizeOf(ModuleName));
+        if LowerCase(ExtractFileName(ModuleName)) = LowerCase(ExtractFileName(pnm)) then
+          process_killed := TerminateProcess(hProcess, 0);
+        CloseHandle(hProcess);
+      end;
+    end;
+    if not process_killed then Sleep(800);
+  until process_killed;
+  except
+  end;
+end;
